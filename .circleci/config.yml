@@ -1,0 +1,44 @@
+version: 2.1
+jobs:
+  build-and-test:
+    macos:
+      xcode: 11.3.0
+    environment:
+      FL_OUTPUT_DIR: output
+
+    steps:
+      - checkout
+      - run:
+          name: Install CocoaPods
+          command: pod install --verbose
+
+      - run:
+          name: Build and run tests
+          command: fastlane scan
+          environment:
+            SCAN_DEVICE: iPhone 8
+            SCAN_SCHEME: Sample (iOS)
+
+      - store_test_results:
+          path: output/scan
+      - store_artifacts:
+          path: output
+
+  swiftlint:
+    docker:
+      - image: bytesguy/swiftlint:latest
+        auth:
+          username: mydockerhub-user
+          password: $DOCKERHUB_PASSWORD  # context / project UI env-var reference
+    steps:
+      - checkout
+      - run: swiftlint lint --reporter junit | tee result.xml
+      - store_artifacts:
+          path: result.xml
+      - store_test_results:
+          path: result.xml
+
+workflows:
+  build-test-lint:
+    jobs:
+      - build-and-test
